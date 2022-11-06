@@ -1,7 +1,14 @@
-# Record helper script for streamtuner
+# Record helper script for Streamtuner 2
 
-This script contains some logic to download different streaming types
-in Streamtuner 2.
+This script contains some logic to download different streaming types in Streamtuner 2 with streamripper.
+
+👤 Author: Axel Hahn
+📜 Licence: GNU GPL 3.0
+
+Links to related products:
+
+* **Streamtuner 2**: internet radio directory browser <https://sourceforge.net/projects/streamtuner2/> 
+* **Streamripper**: record streams as mp3 to your hard drive <https://streamripper.sourceforge.net/>
 
 ## Why
 
@@ -11,18 +18,29 @@ So it was my challenge: show something what happens or show an error that I am a
 If this was done I saw why a few streams do not start to donload.
 Do I need to fetch a real stream first by following "location:" or grep the 1st line of a m3u playlist.
 
-With the different station plugins exist several constellations. This script is an anitial point and not feature complete yet.
+With the different station plugins exist several constellations. This script is an initial point and not feature complete yet.
+
+![screenshot](./docs/images/st2_record_helper.png)
 
 ## Installation
 
+### Get the files
+
 Extract archive or git clone the repository somewhere. 
-I used `/home/axel/scripts/streamtuner/`.
+I used `/home/axel/scripts/st2_record_helper/`.
+
+```txt
+cd ~/scripts
+git clone https://github.com/axelhahn/st2_record_helper.git
+```
+
+### Configure Streamtuner 2
 
 In Streamtuner2 press F12 for settings. In the record section for `audio/*` set
 
-`konsole -e /home/axel/scripts/streamtuner/record_helper.sh`
+`konsole -e /home/axel/scripts/st2_record_helper/record_helper.sh`
 or
-`gnome-terminal -- /home/axel/scripts/streamtuner/record_helper.sh`
+`gnome-terminal -- /home/axel/scripts/st2_record_helper/record_helper.sh`
 
 ## Requirements
 
@@ -30,6 +48,8 @@ or
 * curl
 * ffmpeg
 * streamripper
+
+It was tested on Linux only.
 
 ## Supported downloads
 
