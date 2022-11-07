@@ -5,21 +5,26 @@
 # for streamtuner2
 #
 # ----------------------------------------------------------------------------
+# 👤 Author: Axel Hahn
+# 📄 Source: <https://github.com/axelhahn/st2_record_helper>
+# 📜 License: GNU GPL 3.0
+# ----------------------------------------------------------------------------
 # 2022-11-03  v0.1  www.axel-hahn.de  init
+# 2022-11-07  v0.2  www.axel-hahn.de  enable external config; add pls + mpegxurl as stream
 # ============================================================================
 
 # ----------------------------------------------------------------------------
 # CONFIG
 # ----------------------------------------------------------------------------
 
-_version=0.1
+_version=0.2
 _url="$1"
 
 # download dirs:
 _dirstreamripper=~/Music/streamripper
 _dirfiles=~/Music/streamripper
 
-_tmpdlfile=_incomplete_
+_tmpdlfile=_download__$( date "+%Y-%m-%d__%H_%M_%S" )
 
 _userAgent="Axels streamtuner2 record_helper v$_version"
 
@@ -58,7 +63,7 @@ function _exit_with_error(){
 function _wait(){
     echo -e "\e[0m"
     echo -n "... wait for $_iWait sec ... or press RETURN to exit >"
-    read -t $_iWait dummy 
+    read -rt $_iWait dummy 
     echo
     echo
 }
@@ -82,7 +87,10 @@ function _showHttpResponseHeader(){
 # param  string  http response header
 function _detectHttpIsStream(){
     local _header="$1"
-    echo "$_header" | grep -iE "^(Server: Icecast|icy-name:)" 
+    echo "$_header" | grep -iE "^(Content-Type:.*audio/x-scpls)"    && return 0
+    echo "$_header" | grep -iE "^(Content-Type:.*audio/x-mpegurl)"  && return 0
+    echo "$_header" | grep -iE "^(Server: Icecast|icy-name:)"       && return 0
+    return 1
 }
 
 # detect a http OK (200)
@@ -107,6 +115,8 @@ function _detectStreamUrl(){
     local _header="$1"
     local _newUrl
 
+    local _bRead1stLine=0
+
     _newUrl="$_url"
 
     # --- (1) follow "location:"
@@ -116,7 +126,10 @@ function _detectStreamUrl(){
     fi
 
     # --- (2) read 1st line if it is a m3u playlist
-    if echo "$_newUrl" | grep "\.m3u$" >/dev/null ; then
+    echo "$_newUrl" | grep "\.m3u$" >/dev/null                                && _bRead1stLine=1
+    echo "$_header" | grep -iE "^(Content-Type:.*audio/x-mpegurl)" >/dev/null && _bRead1stLine=1
+
+    if [ $_bRead1stLine = 1 ]; then
         _wd "reading 1st url from m3u playlist [$_newUrl]..."
         _newUrl=$( curl -L -k --connect-timeout $_iTimeout "$_newUrl" 2>/dev/null | head -1 )
     fi
@@ -203,11 +216,21 @@ echo >&2
 
 test -z "$_url" && _exit_with_error "ERROR: no url was given"
 
+if ! echo "$_url" | grep "://" >/dev/null
+then
+    _exit_with_error "Local files are not supported yet:\n\r$_url"
+fi
+
 # ---------- LOAD CONFIG
 # this section works but is not used yet ... so I comment it
-    # _h2 "Load config"
-    # echo "loading $( dirname $0 )/config/default"
-    # . $( dirname $0 )/config/default
+_h2 "Load config"
+_wd "loading $( dirname $0 )/config/default"
+defaultcfg=$( dirname $0 )/config/default
+test -f "$defaultcfg" || cp "${defaultcfg}.dist" "$defaultcfg"
+if ! . $( dirname $0 )/config/default; then
+    _exit_with_error "Failed to load config"
+fi
+
     # _sStreamHost=$( echo "$_url" | cut -f 3 -d "/")
     # _wd "Host: $_sStreamHost"
 
@@ -216,7 +239,7 @@ test -z "$_url" && _exit_with_error "ERROR: no url was given"
 
     # test -r "$streamcfg" && echo "Loading $streamcfg" || _wd "SKIP - a custom config does not exist [$streamcfg]"
     # test -r "$streamcfg" && . "$streamcfg"
-    # echo
+echo
 
 # ---------- DETECT
 _h2 "switch: detect if it is a file or a stream ..."
@@ -256,6 +279,7 @@ case "$_sType" in
         echo
 
         if [ "$_outfile" = "$_tmpdlfile" ]; then
+            # ffprobe "$1" 
             _outfile=$( _getmp3filename $_dirfiles/$_tmpdlfile )
             if [ -z "$_outfile" ]; then
                 echo "$_header"; echo -n "filename to write >" 
@@ -264,7 +288,7 @@ case "$_sType" in
             mv "$_dirfiles/$_tmpdlfile" "$_dirfiles/$_outfile"
         fi
         _h2 "Output:"
-        ls -l "$_dirfiles/$_outfile"
+        ls -l "$_dirfiles/$_outfile" && ( echo; echo; echo "ALL DONE. A single file was downloaded."; echo )
         ;;
     "stream")
         _h2 "detect url to a real stream"
@@ -283,3 +307,5 @@ case "$_sType" in
 esac
 _wait
 exit
+
+# ----------------------------------------------------------------------------

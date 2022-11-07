@@ -47,27 +47,62 @@ or
 
 * Bash
 * curl
-* ffmpeg
+* ffmpeg (to fetch id3 tags in Jamendo tracks)
 * streamripper
 
 It was tested on Linux only.
+
+## Features
+
+* You get output! Which stream was requested, http headers for details. 
+* on error: a window does not just close - you have 60 sec to read it
+* automatic fetching for a real streaming url in some playlist types
+* support for the download of files (Jamendo, MODarchive) with automatic renaming
+* additional script for cleanup of streamripper output directories
 
 ## Supported downloads
 
 ### Stream file donwloads
 
 * **shoutcast + icecast streams**<br>Streamripper will be used to download each single file
-* **m3u** will be fetched to grep the first stream in it. That one will be put to streamripper.
+* playlist **m3u** will be fetched to grep the first stream in it. That one will be put to streamripper.
+* playlist **mpegurl** will be fetched to grep the first stream in it. That one will be put to streamripper.
+* playlist **pls** can be handled directly by streamripper.
 
 ### Single file donwloads
 
 Single file downloads will be handled by `curl`.
 
-* **Jamendo**: mp3<br>downloaded files will be renamed to "TITLE - ARTIST (YEAR).mp3" by using `ffprobe` (which is part of ffmpeg package)
+* **Jamendo**: tracks - mp3 single files<br>downloaded files will be renamed to "TITLE - ARTIST (YEAR).mp3" by using `ffprobe` (which is part of ffmpeg package)
 * **MODArchiv**: mod, it, s3m, xm<br>names downloaded file are taken from http reponse header - valuie filename in field `Content-Disposition:`
 
-## known errors
+### Tested ST2 channel plugins
 
-### error -28 [SR_ERROR_INVALID_METADATA]
+The following list gives you a general  overview about tested channel plugins. 
 
-This is a bug in streamripper: t tries to request metadata in http/1.1 but can understand http 1.0 only.
+**Remarks**:
+- In each type of plugin - even if it is marked as functional - can be some radiostations that do not work.
+- Because of internal handling for local downloads and fetching urls you can download more station in this early version already compared to configuring the download with a streamripper binary directly.
+
+In alphabetic order:
+
+* ✅ **Internet-Radio** PLS playlist via http(s)
+* 🔶 **Jamendo**<br>
+  * ◻️ radios
+  * ◻️ playlists
+  * ◻️ albums
+  * ✅ track - download of a single file with curl including automatic renaming
+* ✅ **LiveRadio** direct streaming urls
+* ✅ **MODarchive** download of a single file with curl; target file will be detected from `Content-Disposition:`
+* 🔴 **MyOggRadio** PLS playlist in local /tmp directory (not supported)
+* ✅ **RadioBrowser** direct streaming urls (Icecast)
+* ✅ **Shoutcast** PLS playlist via http(s)
+* ✅ **Streema** direct streaming urls (Icecast)
+* ✅ **Surfmusic** M3U playlist via http(s) - 1st sreaming url in it will be used
+* ✅ **TuneIn** audio/x-mpegurl playlist via http(s) - 1st sreaming url in it will be used
+* ✅ **Xiph.org** direct streaming urls (Icecast)
+
+## Known errors
+
+* **error -28 [SR_ERROR_INVALID_METADATA]**
+  This is a bug in streamripper: t tries to request metadata in protocol version http/1.1 - but streamripper can understand http 1.0 only.

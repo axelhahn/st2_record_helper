@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# download dirs:
+_dirstreamripper=~/Music/streamripper
+_dirfiles=~/Music/streamripper
+
+_tmpdlfile=_incomplete_
