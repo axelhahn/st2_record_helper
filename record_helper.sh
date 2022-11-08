@@ -11,6 +11,7 @@
 # ----------------------------------------------------------------------------
 # 2022-11-03  v0.1  www.axel-hahn.de  init
 # 2022-11-07  v0.2  www.axel-hahn.de  enable external config; add pls + mpegxurl as stream
+# 2022-11-08  v0.3  www.axel-hahn.de  add support for MyOggRadio plugin: read from a local pls file
 # ============================================================================
 
 # ----------------------------------------------------------------------------
@@ -130,12 +131,17 @@ function _detectStreamUrl(){
     echo "$_header" | grep -iE "^(Content-Type:.*audio/x-mpegurl)" >/dev/null && _bRead1stLine=1
 
     if [ $_bRead1stLine = 1 ]; then
-        _wd "reading 1st url from m3u playlist [$_newUrl]..."
+        _wd "reading 1st url from m3u playlist [$_newUrl] ..."
         _newUrl=$( curl -L -k --connect-timeout $_iTimeout "$_newUrl" 2>/dev/null | head -1 )
     fi
 
+    if echo "$_newUrl" | grep -v "://" | grep "\.pls" >/dev/null; then
+        _wd "scan pls file [$_newUrl] ..."
+        _newUrl=$( cat "$_newUrl" | grep "^File.*=.*http" | head -1 | cut -f 2- -d "=" )
+    fi
+
     test "$_url" != "$_newUrl" && (
-        echo "Change url to [$_newUrl]"
+        echo "Set streaming url to [$_newUrl]"
         _showHttpResponseHeader "$_newUrl"
     ) || (
         echo "Url does not change."
@@ -216,11 +222,6 @@ echo >&2
 
 test -z "$_url" && _exit_with_error "ERROR: no url was given"
 
-if ! echo "$_url" | grep "://" >/dev/null
-then
-    _exit_with_error "Local files are not supported yet:\n\r$_url"
-fi
-
 # ---------- LOAD CONFIG
 # this section works but is not used yet ... so I comment it
 _h2 "Load config"
@@ -241,27 +242,33 @@ fi
     # test -r "$streamcfg" && . "$streamcfg"
 echo
 
-# ---------- DETECT
-_h2 "switch: detect if it is a file or a stream ..."
-_header=$( curl -I -L --connect-timeout $_iTimeout "$_url" 2>/dev/null )
-_showHttpResponseHeader "$_url" "$_header"
-
-test -z "$_header"         && _exit_with_error "ERROR: No response from target server."
-_detectHttpFail "$_header" && _exit_with_error "ERROR: unable to reach target server."
-
-
-if _detectHttpIsStream "$_header"; then
+if ! echo "$_url" | grep "://" >/dev/null
+then
+    _h2 "Local file detected"
     _sType="stream"
+    _wd "It will be handled as a stream. I hope it is a playlist."
 else
-    if _detectHttpOK "$_header"; then
-        if _detectFile "$_header"; then
-            _sType="file"
+    # ---------- DETECT
+    _h2 "Url detected - detect if it is a file or a stream ..."
+    _header=$( curl -I -L --connect-timeout $_iTimeout "$_url" 2>/dev/null )
+    _showHttpResponseHeader "$_url" "$_header"
+
+    test -z "$_header"         && _exit_with_error "ERROR: No response from target server."
+    _detectHttpFail "$_header" && _exit_with_error "ERROR: unable to reach target server."
+
+    if _detectHttpIsStream "$_header"; then
+        _sType="stream"
+    else
+        if _detectHttpOK "$_header"; then
+            if _detectFile "$_header"; then
+                _sType="file"
+            else
+                _sType="stream"
+            fi
         else
+            echo "HTTP ERROR ... unable to detect - fallback: handling it as a stream"
             _sType="stream"
         fi
-    else
-        echo "HTTP ERROR ... unable to detect - fallback: handling it as a stream"
-        _sType="stream"
     fi
 fi
 

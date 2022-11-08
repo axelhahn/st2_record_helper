@@ -94,7 +94,7 @@ Both variants don't modify your custom configuration.
 Single file downloads will be handled by `curl`.
 
 * **Jamendo**: tracks - mp3 single files<br>downloaded files will be renamed to "TITLE - ARTIST (YEAR).mp3" by using `ffprobe` (which is part of ffmpeg package)
-* **MODArchiv**: mod, it, s3m, xm<br>names downloaded file are taken from http reponse header - valuie filename in field `Content-Disposition:`
+* **MODArchiv**: mod, it, s3m, xm<br>the name of the target file is taken from http reponse header - value `filename` in field `Content-Disposition:`
 
 ### Tested ST2 channel plugins
 
@@ -113,8 +113,8 @@ In alphabetic order:
   * ◻️ albums
   * ✅ track - download of a single file with curl including automatic renaming
 * ✅ **LiveRadio** direct streaming urls
-* ✅ **MODarchive** download of a single file with curl; target file will be detected from `Content-Disposition:`
-* 🔴 **MyOggRadio** PLS playlist in local /tmp directory (not supported)
+* ✅ **MODarchive** download of a single file with curl; the name of the target file will be detected from `Content-Disposition:`
+* ✅ **MyOggRadio** PLS playlist in local /tmp directory (not supported)
 * ✅ **RadioBrowser** direct streaming urls (Icecast)
 * ✅ **Shoutcast** PLS playlist via http(s)
 * ✅ **Streema** direct streaming urls (Icecast)
