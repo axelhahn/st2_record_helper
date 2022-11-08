@@ -106,6 +106,7 @@ The following list gives you a general  overview about tested channel plugins.
 
 In alphabetic order:
 
+* ✅ **filtermusic** direct streaming urls (Icecast)
 * ✅ **Internet-Radio** PLS playlist via http(s)
 * 🔶 **Jamendo**<br>
   * ◻️ radios
@@ -116,10 +117,15 @@ In alphabetic order:
 * ✅ **MODarchive** download of a single file with curl; the name of the target file will be detected from `Content-Disposition:`
 * ✅ **MyOggRadio** PLS playlist in local /tmp directory
 * ✅ **RadioBrowser** direct streaming urls (Icecast)
+* ◻️ **reddit** not supported; videos will be shown in VLC
 * ✅ **Shoutcast** PLS playlist via http(s)
+* ✅ **SomaFM** PLS playlist via http(s)
 * ✅ **Streema** direct streaming urls (Icecast)
 * ✅ **Surfmusic** M3U playlist via http(s) - 1st sreaming url in it will be used
 * ✅ **TuneIn** audio/x-mpegurl playlist via http(s) - 1st sreaming url in it will be used
+* ✅ **UbuntuUsers** 
+  * ✅ M3U Playlist
+  * ✅ direct streaming urls (Icecast)
 * ✅ **Xiph.org** direct streaming urls (Icecast)
 
 ## Known errors

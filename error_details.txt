@@ -1,0 +1,23 @@
+# ======================================================================
+#
+# ERROR Codes to show a more clean error message
+#
+# ======================================================================
+
+# ----------------------------------------------------------------------
+# http status codes
+# ----------------------------------------------------------------------
+
+http_404:the requested stream does not exist anymore. This is a dead link.
+
+http_500:internal server error - the streaming service exists but currently does not work
+http_501:server error - not implemented - the request method is not supported
+http_503:internal server error - the streaming service exists but currently does not work
+http_504:server error - the service did not react within a time limit ... timeout
+
+# ----------------------------------------------------------------------
+# streamripper error codes
+# ----------------------------------------------------------------------
+
+error -9 [SR_ERROR_PARSE_FAILURE]:The streaming url cannot be parsed. Maybe there is a wrong or unencoded character in it.
+error -28 [SR_ERROR_INVALID_METADATA]:This is a bug in streamripper itself. It requests data in http v1.1 but understands http 1.0 only.

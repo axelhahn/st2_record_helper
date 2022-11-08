@@ -5,6 +5,14 @@
 # for streamtuner2
 #
 # ----------------------------------------------------------------------------
+#
+# WORK IN PROGRESS ... TODOs
+#   - command line parameters
+#   - .. and a help
+#   - customize colors in config file
+#   - integrate cleanup of streamripper_cleanup.sh
+#
+# ----------------------------------------------------------------------------
 # 👤 Author: Axel Hahn
 # 📄 Source: <https://github.com/axelhahn/st2_record_helper>
 # 📜 License: GNU GPL 3.0
@@ -12,13 +20,14 @@
 # 2022-11-03  v0.1  www.axel-hahn.de  init
 # 2022-11-07  v0.2  www.axel-hahn.de  enable external config; add pls + mpegxurl as stream
 # 2022-11-08  v0.3  www.axel-hahn.de  add support for MyOggRadio plugin: read from a local pls file
+# 2022-11-09  v0.4  www.axel-hahn.de  complete check of radio plugins; more error details
 # ============================================================================
 
 # ----------------------------------------------------------------------------
 # CONFIG
 # ----------------------------------------------------------------------------
 
-_version=0.3
+_version=0.4
 _url="$1"
 
 # download dirs:
@@ -36,7 +45,7 @@ _iTimeout=3
 _iWait=60
 
 _sType=
-
+_errfile="$( dirname $0 )/error_details.txt"
 
 # ----------------------------------------------------------------------------
 # FUNCTIONS
@@ -105,7 +114,10 @@ function _detectHttpOK(){
 # param  string  http response header
 function _detectHttpFail(){
     local _header="$1"
-    echo "$_header" | grep -iE "^http/.*(404|50.)" >/dev/null
+
+    echo "$_header" | grep -iE "^http/.*(404|500|503|504)" >/dev/null || return 0
+    _err=$( _getHttpDetails "$_header" )
+    _exit_with_error "ERROR: unable to reach target server.\n\r$_err"
 }
 
 # detect a streaming url
@@ -127,12 +139,12 @@ function _detectStreamUrl(){
     fi
 
     # --- (2) read 1st line if it is a m3u playlist
-    echo "$_newUrl" | grep "\.m3u$" >/dev/null                                && _bRead1stLine=1
+    echo "$_newUrl" | grep "\.m3u" >/dev/null                                 && _bRead1stLine=1
     echo "$_header" | grep -iE "^(Content-Type:.*audio/x-mpegurl)" >/dev/null && _bRead1stLine=1
 
     if [ $_bRead1stLine = 1 ]; then
-        _wd "reading 1st url from m3u playlist [$_newUrl] ..."
-        _newUrl=$( curl -L -k --connect-timeout $_iTimeout "$_newUrl" 2>/dev/null | head -1 )
+        _wd "reading 1st url from playlist [$_newUrl] ..."
+        _newUrl=$( curl -L -k --connect-timeout $_iTimeout "$_newUrl" 2>/dev/null | grep -v "^#" | grep "://" | head -1 )
     fi
 
     if echo "$_newUrl" | grep -v "://" | grep "\.pls" >/dev/null; then
@@ -143,6 +155,7 @@ function _detectStreamUrl(){
     test "$_url" != "$_newUrl" && (
         echo "Set streaming url to [$_newUrl]"
         _showHttpResponseHeader "$_newUrl"
+        _detectHttpFail "$_header"
     ) || (
         echo "Url does not change."
     )
@@ -155,7 +168,11 @@ function _detectStreamUrl(){
 # param  string  http response header
 function _detectPlaylist(){
     local _header="$1"
-    echo "$_header" | grep -i "^Content-Type: application/vnd.apple.mpegurl" >/dev/null 
+    echo "$_header" | grep -i "^Content-Disposition: attachment"             >/dev/null && return 1
+
+    echo "$_header" | grep -i "^Content-Type: application/octet-stream"      >/dev/null && return 0
+    echo "$_header" | grep -i "^Content-Type: application/vnd.apple.mpegurl" >/dev/null && return 0
+    return 1
 }
 
 # detect a file
@@ -165,10 +182,12 @@ function _detectFile(){
 
     if echo "$_header" | grep -i "^content-length: [1-9][0-9]*" >/dev/null; then 
         if _detectPlaylist "$_header"; then
-            false
+                false
         else
             true
         fi
+    else
+        false
     fi
 }
 
@@ -202,6 +221,33 @@ function _getmp3filename(){
         test -n "$_year" && _year=" (${_year})"
         echo "${_title} - ${_artist}${_year}.mp3"
     fi
+}
+
+# fetch the 3 digit http stazus code number from header
+# if there is a redirect with location: it will return the status of the last hop
+# param  string  http response header
+function _getHttpCode(){
+    local _header="$1"
+    echo "$_header" | grep -i "^http.* [1-9][0-9]*" | cut -f 2 -d " " | tail -1
+}
+
+# get a detailed message of a http status code
+# param  string  http response header
+function _getHttpDetails(){
+    local _header="$1"
+    local _iHttpcode
+    local _sInfo
+    _iHttpcode=$( _getHttpCode "$_header" )
+    _sInfo=$( _getErrorDetails "http_${_iHttpcode}" )
+    echo -n "Http status code $_iHttpcode"
+    test -n "$_sInfo" && echo ": $_sInfo" || echo
+}
+# get a more detailed message to a given error code
+# this function searches for the error code in error_details.txt
+#param  string  an error code
+function _getErrorDetails(){
+    local _code="$1"
+    grep -F "$_code" "$_errfile" | cut -f 2- -d ":"
 }
 
 # ----------------------------------------------------------------------------
@@ -253,8 +299,9 @@ else
     _header=$( curl -I -L --connect-timeout $_iTimeout "$_url" 2>/dev/null )
     _showHttpResponseHeader "$_url" "$_header"
 
-    test -z "$_header"         && _exit_with_error "ERROR: No response from target server."
-    _detectHttpFail "$_header" && _exit_with_error "ERROR: unable to reach target server."
+    test -z "$_header"         && _exit_with_error "ERROR: No response from target server.\n\rThe ip address or hostname does not exist anymore or the streaming service is offline."
+
+    _detectHttpFail "$_header"
 
     if _detectHttpIsStream "$_header"; then
         _sType="stream"
@@ -292,22 +339,45 @@ case "$_sType" in
                 echo "$_header"; echo -n "filename to write >" 
                 read -r _outfile
             fi
-            mv "$_dirfiles/$_tmpdlfile" "$_dirfiles/$_outfile"
+            if [ -n "$_outfile" ]; then
+                echo "renaming temporary download file $_tmpdlfile ..."
+                mv "$_dirfiles/$_tmpdlfile" "$_dirfiles/$_outfile"
+            fi
         fi
+
         _h2 "Output:"
-        ls -l "$_dirfiles/$_outfile" && ( echo; echo; echo "ALL DONE. A single file was downloaded."; echo )
+        if [ -n "$_outfile" ]; then
+            ls -l "$_dirfiles/$_outfile" && ( echo; echo; echo "ALL DONE. A single file was downloaded."; echo )
+        else
+            echo "removing temporary download file $_dirfiles/$_tmpdlfile ..."
+            rm -f "$_dirfiles/$_tmpdlfile"
+        fi
         ;;
     "stream")
         _h2 "detect url to a real stream"
         _detectStreamUrl "$_header" # this overrides global var _url
 
-        _h2 "starting streamripper ..."
+        _h2 "streamripper pre check ..."
         streamripper -v
-        echo -e "\e[34m"
-        set -vx
-        streamripper "$_url" -u "$_userAgent" -d "$_dirstreamripper" -m 10
-        set +vx
-        echo -e "\e[0m"
+
+        # start a pre check with recording 1 sec to detect a general streaming error
+        _out=$( streamripper "$_url" -l 1 -u "$_userAgent" -d "$_dirstreamripper" -m 10 2>&1 )
+        _sr_error=$( echo "$_out" | grep  "error -[1-9][0-9]* \[[A-Z]*" )
+
+        if [ -n "$_sr_error" ]; then
+            _err_detail=$( _getErrorDetails "$_sr_error" )
+            _exit_with_error "ERROR: the stream recording cannot start. This is the error from streamripper:\n\r\n\r    $_sr_error\n\r    $_err_detail"
+        else
+            echo "OK: recording the stream looks fine."
+            echo
+
+            _h2 "starting streamripper ..."
+            echo -e "\e[34m"
+            set -vx
+            streamripper "$_url" -u "$_userAgent" -d "$_dirstreamripper" -m 10 
+            set +vx
+            echo -e "\e[0m"
+        fi
         ;;
     *)
         echo "type [$_sType] is unknown."
