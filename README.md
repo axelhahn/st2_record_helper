@@ -114,7 +114,7 @@ In alphabetic order:
   * ✅ track - download of a single file with curl including automatic renaming
 * ✅ **LiveRadio** direct streaming urls
 * ✅ **MODarchive** download of a single file with curl; the name of the target file will be detected from `Content-Disposition:`
-* ✅ **MyOggRadio** PLS playlist in local /tmp directory (not supported)
+* ✅ **MyOggRadio** PLS playlist in local /tmp directory
 * ✅ **RadioBrowser** direct streaming urls (Icecast)
 * ✅ **Shoutcast** PLS playlist via http(s)
 * ✅ **Streema** direct streaming urls (Icecast)
