@@ -4,4 +4,18 @@
 _dirstreamripper=~/Music/streamripper
 _dirfiles=~/Music/streamripper
 
-_tmpdlfile=_incomplete_
+# custom user agent
+# _userAgent="VLC/3.0.6 LibVLC/3.0.6"
+
+# curl connect timeout
+_iTimeout=3
+
+# waiting time in sec before exit
+_iWait=60
+
+# colors
+_col_h1="1;33"
+_col_h2="33"
+_col_err="1;31"
+_col_debug="36"
+_col_work="34"
