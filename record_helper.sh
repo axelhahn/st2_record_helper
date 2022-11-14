@@ -21,13 +21,14 @@
 # 2022-11-07  v0.2  www.axel-hahn.de  enable external config; add pls + mpegxurl as stream
 # 2022-11-08  v0.3  www.axel-hahn.de  add support for MyOggRadio plugin: read from a local pls file
 # 2022-11-09  v0.4  www.axel-hahn.de  complete check of radio plugins; more error details
+# 2022-11-14  v1.0  www.axel-hahn.de  detect empty streaming url in playlist; customize colors; cli params, ...
 # ============================================================================
 
 # ----------------------------------------------------------------------------
 # CONFIG
 # ----------------------------------------------------------------------------
 
-_version=0.4
+_version="1.0"
 _url="$1"
 
 # download dirs:
@@ -47,6 +48,13 @@ _iWait=60
 _sType=
 _errfile="$( dirname $0 )/error_details.txt"
 
+# colors
+_col_h1="1;33"
+_col_h2="33"
+_col_err="1;31"
+_col_debug="36"
+_col_work="34"
+
 # ----------------------------------------------------------------------------
 # FUNCTIONS
 # ----------------------------------------------------------------------------
@@ -54,18 +62,18 @@ _errfile="$( dirname $0 )/error_details.txt"
 # show headline 2
 # paramm string  message text
 function _h2(){
-    echo -e "\e[36m>>> $*\e[0m" >&2
+    echo -e "\e[${_col_h2}m>>> $*\e[0m" >&2
 }
 
 # show a debug info
 # paramm string  message text
 function _wd(){
-    echo -e "\e[1;30mDEBUG $*\e[0m" >&2
+    echo -e "\e[${_col_debug}mDEBUG $*\e[0m" >&2
 }
 # show a debug info
 # paramm string  message text
 function _exit_with_error(){
-    echo -e "\e[1;31m$*\e[0m" >&2
+    echo -e "\e[${_col_err}m$*\e[0m" >&2
     _wait
     exit 1
 }
@@ -85,7 +93,7 @@ function _showHttpResponseHeader(){
     local _url="$1"
     local _header="$2"
 
-    test -z "$_header" && _header=$( curl -I -L --connect-timeout $_iTimeout "$_url" 2>/dev/null )
+    test -z "$_header" && _header=$( curl -I -L --connect-timeout $_iTimeout --user-agent "$_userAgent" "$_url" 2>/dev/null )
     _wd "Response header of $_url\n\r$_header" 
 }
 # detect a supported strem in http response
@@ -144,7 +152,7 @@ function _detectStreamUrl(){
 
     if [ $_bRead1stLine = 1 ]; then
         _wd "reading 1st url from playlist [$_newUrl] ..."
-        _newUrl=$( curl -L -k --connect-timeout $_iTimeout "$_newUrl" 2>/dev/null | grep -v "^#" | grep "://" | head -1 )
+        _newUrl=$( curl -L -k --connect-timeout $_iTimeout --user-agent "$_userAgent" "$_newUrl" 2>/dev/null | grep -v "^#" | grep "://" | head -1 )
     fi
 
     if echo "$_newUrl" | grep -v "://" | grep "\.pls" >/dev/null; then
@@ -153,6 +161,9 @@ function _detectStreamUrl(){
     fi
 
     test "$_url" != "$_newUrl" && (
+        if [ -z "$_newUrl" ]; then
+            _exit_with_error "ERROR: detected an empty streaming url. Maybe the playlist is corrupt."
+        fi
         echo "Set streaming url to [$_newUrl]"
         _showHttpResponseHeader "$_newUrl"
         _detectHttpFail "$_header"
@@ -190,7 +201,6 @@ function _detectFile(){
         false
     fi
 }
-
 
 # helper of _getmp3filename
 # get a single info
@@ -242,41 +252,140 @@ function _getHttpDetails(){
     echo -n "Http status code $_iHttpcode"
     test -n "$_sInfo" && echo ": $_sInfo" || echo
 }
+
 # get a more detailed message to a given error code
 # this function searches for the error code in error_details.txt
 #param  string  an error code
 function _getErrorDetails(){
     local _code="$1"
-    grep -F "$_code" "$_errfile" | cut -f 2- -d ":"
+    grep -F "$_code" "$_errfile" | cut -f 2- -d "|"
 }
 
+# cleanup files in streamripper target directory.
+# It removes subdirs without a file and cleans up "incomplete" subdirs
+function _doCleanup(){
+
+    typeset -i local iFiles
+    typeset -i local iFiles2
+
+    test -z "$_dirstreamripper" && _exit_with_error "ERROR: _dirstreamripper is empty. Aborting."
+    cd "$_dirstreamripper" || exit 1
+
+    _h2 "CLEANUP STREAMING DIRS [$(pwd)]"
+    echo "I remove subdirs without a file and clean up 'incomplete' subdirs"
+    echo
+
+    find . -maxdepth 1 -type d | grep -v "^.$" | sort | while read -r stationdir
+    do
+        echo "--- ${stationdir}/"
+        iFiles=$(find "$stationdir" -maxdepth 1 -type f | wc -l )
+        printf "      +--- contains    : %4s files ... " "$iFiles"
+        test $iFiles -eq 0 && (
+            echo -n "DELETE ... "
+            rm -rf "${stationdir}" && echo "OK" || echo "FAILED"
+        ) || (
+            echo "KEEP"
+            iFiles2=$(find "$stationdir/incomplete" -maxdepth 1 -type f | wc -l )
+            printf "      +--- [incomplete]: %4s files ... " $iFiles2
+            test $iFiles2 -gt 0 && (
+                echo -n "DELETE ... "
+                find "$stationdir/incomplete" -maxdepth 1 -type f -delete && echo "OK" || echo "FAILED"
+            ) || (
+                echo "Nothing to do."
+            )
+        )
+        echo
+    done    
+}
+
+# show help text
+function _doShowHelp(){
+    local _self=$( basename "$0" )
+echo "
+HELP:
+A helper script to record streams and audiofiles listed in Streamtuner2.
+You can add it in Streamtuner2 settings as recording handler.
+
+It makes several checks of a given url 
+- detect last location on redirects
+- read sreaming url from a m3u playlist
+
+It shows http response header to analyze what happens.
+
+It tries to show a clear error message to see why a stream cannot be recorded
+and keeps the console window open for 60 sec that you are able to read the
+message on exit.
+
+Next to Radiostreams the donwload of single audio files is supported:
+- Jamendo tracks: mp3 files
+- MODarchive: all tracker files
+
+See README.md with the list of supported streams and plugins.
+
+
+Author: Axel Hahn | License: GNU GPL 3.0
+
+
+SYNTAX:
+$_self [OPTIONS] [URL]
+
+OPTIONS:
+    -c                cleanup empty ripping dirs and exit; start dir is
+                      '$_dirstreamripper'
+    -h                show this help and exit
+    -t <seconds>      override connect timeout of curl; value in config: $_iTimeout
+    -u <user_agent>   set another user agent; it overides value in config
+                      '$_userAgent'
+    -w <seconds>      override time to wait; value in config: $_iWait
+"
+}
 # ----------------------------------------------------------------------------
 # MAIN
 # ----------------------------------------------------------------------------
 
-echo >&2
-echo -en "\e[1;33m">&2
-echo "_______________________________________________________________________________">&2
+echo -en "\e[${_col_h1}m"
+echo "_______________________________________________________________________________"
 echo
-echo "                         ⡀⣀ ⢀⡀ ⢀⣀ ⢀⡀ ⡀⣀ ⢀⣸   ⣇⡀ ⢀⡀ ⡇ ⣀⡀ ⢀⡀ ⡀⣀ " >&2
-echo ">>>>> Axels Streamtuner  ⠏  ⠣⠭ ⠣⠤ ⠣⠜ ⠏  ⠣⠼   ⠇⠸ ⠣⠭ ⠣ ⡧⠜ ⠣⠭ ⠏             v$_version" >&2
-echo >&2
-echo -e "      url: [$_url]" >&2
-echo "_______________________________________________________________________________">&2
-echo -e "\e[0m" >&2
-echo >&2
-
-test -z "$_url" && _exit_with_error "ERROR: no url was given"
+echo " Axel Hahn's           ⡀⣀ ⢀⡀ ⢀⣀ ⢀⡀ ⡀⣀ ⢀⣸   ⣇⡀ ⢀⡀ ⡇ ⣀⡀ ⢀⡀ ⡀⣀ "
+echo "  Streamtuner 2        ⠏  ⠣⠭ ⠣⠤ ⠣⠜ ⠏  ⠣⠼   ⠇⠸ ⠣⠭ ⠣ ⡧⠜ ⠣⠭ ⠏               ______"
+echo "________________________________________________________________________/ v$_version"
+echo -e "\e[0m"
 
 # ---------- LOAD CONFIG
 # this section works but is not used yet ... so I comment it
-_h2 "Load config"
-_wd "loading $( dirname $0 )/config/default"
 defaultcfg=$( dirname $0 )/config/default
 test -f "$defaultcfg" || cp "${defaultcfg}.dist" "$defaultcfg"
 if ! . $( dirname $0 )/config/default; then
     _exit_with_error "Failed to load config"
 fi
+_wd "Config was loaded: $( dirname $0 )/config/default"
+
+# ---------- CHECK PARAMS
+while getopts ":c :h :t: :u: :w:" OPT; do
+  if [ "$OPT" = "-" ]; then   # long option: reformulate OPT and OPTARG
+    OPT="${OPTARG%%=*}"       # extract long option name
+    OPTARG="${OPTARG#$OPT}"   # extract long option argument (may be empty)
+    OPTARG="${OPTARG#=}"      # if long option argument, remove assigning `=`
+  fi
+  case "$OPT" in
+    c) _doCleanup; exit 0; ;;
+    t) _iTimeout=$OPTARG; _wd "SET: connect timeout of curl [$_iTimeout] sec" ;;
+    u) _userAgent="$OPTARG"; _wd "SET: user agent is [$_userAgent]" ;;
+    h) _doShowHelp; exit 0; ;;
+    w) _iWait=$OPTARG; _wd "SET: wait time on exit [$_iWait] sec" ;;
+  esac
+done
+
+shift $((OPTIND - 1))
+
+test -z "$*" && _doShowHelp 
+test -z "$*" && _exit_with_error "ERROR: no url was given"
+
+_url="$1"
+
+echo
+echo -en "\e[${_col_h1}m> $_url\e[0m"
+echo
 
     # _sStreamHost=$( echo "$_url" | cut -f 3 -d "/")
     # _wd "Host: $_sStreamHost"
@@ -288,6 +397,7 @@ fi
     # test -r "$streamcfg" && . "$streamcfg"
 echo
 
+
 if ! echo "$_url" | grep "://" >/dev/null
 then
     _h2 "Local file detected"
@@ -296,7 +406,7 @@ then
 else
     # ---------- DETECT
     _h2 "Url detected - detect if it is a file or a stream ..."
-    _header=$( curl -I -L --connect-timeout $_iTimeout "$_url" 2>/dev/null )
+    _header=$( curl -I -L --connect-timeout $_iTimeout --user-agent "$_userAgent" "$_url" 2>/dev/null )
     _showHttpResponseHeader "$_url" "$_header"
 
     test -z "$_header"         && _exit_with_error "ERROR: No response from target server.\n\rThe ip address or hostname does not exist anymore or the streaming service is offline."
@@ -329,7 +439,7 @@ case "$_sType" in
         test -z "$_outfile" && _outfile=$_tmpdlfile
 
         _h2 "Starting file download [$_dirfiles/$_outfile]..."
-        curl -i --connect-timeout $_iTimeout --output "$_dirfiles/$_outfile" "$_url"
+        curl -i --connect-timeout $_iTimeout --user-agent "$_userAgent" --output "$_dirfiles/$_outfile" "$_url"
         echo
 
         if [ "$_outfile" = "$_tmpdlfile" ]; then
@@ -357,7 +467,7 @@ case "$_sType" in
         _h2 "detect url to a real stream"
         _detectStreamUrl "$_header" # this overrides global var _url
 
-        _h2 "streamripper pre check ..."
+        _h2 "streamripper pre test ..."
         streamripper -v
 
         # start a pre check with recording 1 sec to detect a general streaming error
@@ -366,13 +476,13 @@ case "$_sType" in
 
         if [ -n "$_sr_error" ]; then
             _err_detail=$( _getErrorDetails "$_sr_error" )
-            _exit_with_error "ERROR: the stream recording cannot start. This is the error from streamripper:\n\r\n\r    $_sr_error\n\r    $_err_detail"
+            _exit_with_error "ERROR: the stream recording cannot start. This is the error from streamripper:\n\r\n\r$_sr_error\n\r\n\r$_err_detail"
         else
             echo "OK: recording the stream looks fine."
             echo
 
             _h2 "starting streamripper ..."
-            echo -e "\e[34m"
+            echo -e "\e[${_col_work}m"
             set -vx
             streamripper "$_url" -u "$_userAgent" -d "$_dirstreamripper" -m 10 
             set +vx
