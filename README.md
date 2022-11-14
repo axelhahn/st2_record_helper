@@ -66,7 +66,8 @@ It was tested on Linux only.
 * on error: a window does not just close - you have 60 sec to read it
 * automatic fetching for a real streaming url in some playlist types
 * support for the download of files (Jamendo, MODarchive) with automatic renaming
-* additional script for cleanup of streamripper output directories
+* remove unused streamripper output directories and cleanup of 'incomlete' dirs
+* command line parameter support
 
 ## Update
 
@@ -79,6 +80,97 @@ git pull
 Otherwise extract the archive over existing files.
 
 Both variants don't modify your custom configuration.
+
+## Configuration
+
+In the ./config/default you can set:
+
+```shell
+#!/bin/bash
+
+# download dirs:
+_dirstreamripper=~/Music/streamripper
+_dirfiles=~/Music/streamripper
+
+# custom user agent
+# _userAgent="VLC/3.0.6 LibVLC/3.0.6"
+
+# curl connect timeout
+_iTimeout=3
+
+# waiting time in sec before exit
+_iWait=60
+
+# colors
+_col_h1="1;33"
+_col_h2="33"
+_col_err="1;31"
+_col_debug="36"
+_col_work="34"
+```
+
+Variable | Type | Description
+---|---|---
+_dirstreamripper | string | Directory for streamripper; below it creates a subdir per station
+_dirfiles        | string | Directory to download single files
+_userAgent       | string | override user agent
+_iTimeout        | int    | curl connect timeout in sec; default: 3
+_iWait           | int    | waiting time in sec before exit; default: 60
+_col...          | string | override colors<br>Hint: you can try to set the console profile instead of fiddling around with color values.
+
+
+## Command line parameters
+
+Without a parameter or (better) with using -h you get a help.
+The command line parameters override settings from ./config/default
+
+```txt
+> ./record_helper.sh -h
+_______________________________________________________________________________
+
+ Axel Hahn's           ⡀⣀ ⢀⡀ ⢀⣀ ⢀⡀ ⡀⣀ ⢀⣸   ⣇⡀ ⢀⡀ ⡇ ⣀⡀ ⢀⡀ ⡀⣀ 
+  Streamtuner 2        ⠏  ⠣⠭ ⠣⠤ ⠣⠜ ⠏  ⠣⠼   ⠇⠸ ⠣⠭ ⠣ ⡧⠜ ⠣⠭ ⠏           ______
+________________________________________________________________________/ v1.0
+
+DEBUG Config was loaded: /home/axel/skripte/streamtuner/config/default
+
+HELP:
+A helper script to record streams and audiofiles listed in Streamtuner2.
+You can add it in Streamtuner2 settings as recording handler.
+
+It makes several checks of a given url 
+- detect last location on redirects
+- read sreaming url from a m3u playlist
+
+It shows http response header to analyze what happens.
+
+It tries to show a clear error message to see why a stream cannot be recorded
+and keeps the console window open for 60 sec that you are able to read the
+message on exit.
+
+Next to Radiostreams the donwload of single audio files is supported:
+- Jamendo tracks: mp3 files
+- MODarchive: all tracker files
+
+See README.md with the list of supported streams and plugins.
+
+
+Author: Axel Hahn | License: GNU GPL 3.0
+
+
+SYNTAX:
+record_helper.sh [OPTIONS] [URL]
+
+OPTIONS:
+    -c                cleanup empty ripping dirs and exit; start dir is
+                      '/home/axel/Music/streamripper'
+    -h                show this help and exit
+    -t <seconds>      override connect timeout of curl; value in config: 3
+    -u <user_agent>   set another user agent; it overides value in config
+                      'Axels streamtuner2 record_helper v1.0'
+    -w <seconds>      override time to wait; value in config: 60
+
+```
 
 ## Supported downloads
 
@@ -106,27 +198,27 @@ The following list gives you a general  overview about tested channel plugins.
 
 In alphabetic order:
 
-* ✅ **filtermusic** direct streaming urls (Icecast)
-* ✅ **Internet-Radio** PLS playlist via http(s)
+* ✔️ **filtermusic** direct streaming urls (Icecast)
+* ✔️ **Internet-Radio** PLS playlist via http(s)
 * 🔶 **Jamendo**<br>
   * ◻️ radios
   * ◻️ playlists
   * ◻️ albums
-  * ✅ track - download of a single file with curl including automatic renaming
-* ✅ **LiveRadio** direct streaming urls
-* ✅ **MODarchive** download of a single file with curl; the name of the target file will be detected from `Content-Disposition:`
-* ✅ **MyOggRadio** PLS playlist in local /tmp directory
-* ✅ **RadioBrowser** direct streaming urls (Icecast)
+  * ✔️ track - download of a single file with curl including automatic renaming
+* ✔️ **LiveRadio** direct streaming urls
+* ✔️ **MODarchive** download of a single file with curl; the name of the target file will be detected from `Content-Disposition:`
+* ✔️ **MyOggRadio** PLS playlist in local /tmp directory
+* ✔️ **RadioBrowser** direct streaming urls (Icecast)
 * ◻️ **reddit** not supported; videos will be shown in VLC
-* ✅ **Shoutcast** PLS playlist via http(s)
-* ✅ **SomaFM** PLS playlist via http(s)
-* ✅ **Streema** direct streaming urls (Icecast)
-* ✅ **Surfmusic** M3U playlist via http(s) - 1st sreaming url in it will be used
-* ✅ **TuneIn** audio/x-mpegurl playlist via http(s) - 1st sreaming url in it will be used
-* ✅ **UbuntuUsers** 
-  * ✅ M3U Playlist
-  * ✅ direct streaming urls (Icecast)
-* ✅ **Xiph.org** direct streaming urls (Icecast)
+* ✔️ **Shoutcast** PLS playlist via http(s)
+* ✔️ **SomaFM** PLS playlist via http(s)
+* ✔️ **Streema** direct streaming urls (Icecast)
+* ✔️ **Surfmusic** M3U playlist via http(s) - 1st sreaming url in it will be used
+* ✔️ **TuneIn** audio/x-mpegurl playlist via http(s) - 1st sreaming url in it will be used
+* ✔️ **UbuntuUsers** 
+  * ✔️ M3U Playlist
+  * ✔️ direct streaming urls (Icecast)
+* ✔️ **Xiph.org** direct streaming urls (Icecast)
 
 ## Known errors
 
@@ -161,7 +253,7 @@ graph TD
   yesResponse(There was a response)
   ShowHttpHeader[For debugging:<br>Show http response<br>header of given url]
 
-  ErrorResponse{Error in response?<br>40x or 50x?}
+  ErrorResponse{Error in response?<br>404 or 50x?}
   YesErrorResponse(Exit: Stream does not<br>exist or not available)
 
   DetectedStream{Detect<br>stream<br>header}
@@ -185,7 +277,7 @@ graph TD
     DownloadWithCurl(Download With Curl)
     fileGetfilenameFromFile{Get id3 tag<br>with ffprobe}
     setFile2(rename tempfile<br>to title+artist+year)
-    EnterFilename{Enter a filename}
+    EnterFilename
     setFile3(rename tempfile<br>to given file)
     NoFilename(Exit: no filename was given)
   end
@@ -197,6 +289,9 @@ graph TD
   style Start              fill:#8dd,stroke:#088,color:#088,stroke-width:4px
   style End                fill:#8dd,stroke:#088,color:#088,stroke-width:4px
 
+  style DownloadWithCurl1  fill:#8f8,stroke:#080,color:#080,stroke-width:4px
+  style setFile2           fill:#8f8,stroke:#080,color:#080,stroke-width:4px
+  style setFile3           fill:#8f8,stroke:#080,color:#080,stroke-width:4px
   style SRStart            fill:#8f8,stroke:#080,color:#080,stroke-width:4px
 
   style noResponse         fill:#f88,stroke:#800,color:#800,stroke-width:4px
