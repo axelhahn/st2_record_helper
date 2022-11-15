@@ -32,7 +32,7 @@ Variable | Type | Description
 ---|---|---
 _dirstreamripper | string | Directory for streamripper; below it creates a subdir per station
 _dirfiles        | string | Directory to download single files
-_userAgent       | string | override user agent
+_userAgent       | string | override user agent; some streams block unknown/ unwanted user agents
 _iTimeout        | int    | curl connect timeout in sec; default: 3
 _iWait           | int    | waiting time in sec before exit; default: 60
 _col...          | string | override colors<br>Hint: you can try to set the console profile instead of fiddling around with color values.

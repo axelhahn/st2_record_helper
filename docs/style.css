@@ -8,7 +8,7 @@
 :root {
 
     /* Axels Overrides */
-    --link-color: #389;
+    --link-color: #379;
     --brand-color: var(--color-secondary);
     --brand-background: var(--body-background);
     --hr-color: none;
@@ -22,19 +22,19 @@
     --sidebar-link-active-background: #eee;
 
     /* Axels custom values */
-    --axel_bg-toc: #fafafa;
-    --axel_bg-toc-head: #f0f0f0;
+    --axel_bg-toc: var(--body-background);
+    --axel_bg-toc-head: #f8f8f8;
 
     --axel_brand-background: none;
-    --axel_brand-pre-background: #8cc;
-    --axel_brand-pre-background-hover: #8ce;
+    --axel_brand-pre-background: #8ce;
+    --axel_brand-pre-background-hover: #adf;
 
     --axel_h1_header: none;
 
     --axel_h1: #288;
     --axel_h1-bg: #fafafa;
     --axel_h1-bottom: 3px solid #8dd;
-    --axel_h1: #777;
+    --axel_h1: #aaa;
     --axel_h1-bg: none;
     --axel_h1-bottom: 3px solid none;
     --axel_h2: #27a;
@@ -70,11 +70,11 @@
     --sidebar-link-active-background: #333;
 
     /* Axels custom values */
-    --axel_bg-toc: #333;
-    --axel_bg-toc-head: #222;
+    --axel_bg-toc: var(--body-background);
+    --axel_bg-toc-head: #333;
     
     --axel_brand-background: none;
-    --axel_brand-pre-background: #6aa;
+    --axel_brand-pre-background: #69a;
     --axel_brand-pre-background-hover: #6ab;
 
     --axel_h1_header: none;
@@ -103,7 +103,7 @@
     --axel-article-nav-border-top: 2px dotted #234;
 }
 
-/* ---------- tags ---------- */
+/* ---------- left side ---------- */
 
 a.Brand::before {
 	background: var(--axel_brand-pre-background);
@@ -129,11 +129,14 @@ ul.Nav{
     border-bottom: 1px dashed var(--axel_nav-buttomborder);
     background: var(--axel_nav-bg);
 }
-/* ---------- tags ---------- */
+
+/* ---------- page header: breadcrumb ---------- */
 
 .Page__header{border: none;}
 .Page__header a{color: var(--axel_h1_header);}
 .Page__header h1{font-size: 1.3em;}
+
+/* ---------- page content ---------- */
 
 .s-content{padding-top: 1em;}
 .s-content h1{background: var(--axel_h1-bg); color: var(--axel_h1); font-size: 200%; font-weight:bold; margin-top: 0em; border-bottom: var(--axel_h1-bottom);}
@@ -145,19 +148,6 @@ h2:first-of-type {margin-top: 0em;}
     background: var(--axel_pre-background);
 }
 
-.s-content h3 code{border: none; background: none; }
-
-article nav{border-top: var(--axel-article-nav-border-top); margin-top: 8em;}
-
-/* ---------- classes ---------- */
-
-.required{color:#a42;}
-.optional{color:#888;}
-
-
-
-/* ---------- classes ---------- */
-
 /* FIX smaller fnt size in tables */
 .s-content table {
 	font-size: 1em;
@@ -165,7 +155,22 @@ article nav{border-top: var(--axel-article-nav-border-top); margin-top: 8em;}
 .s-content table th{
     background: var(--axel-th-background);
 }
-/* TOC */
+
+.s-content h3 code{border: none; background: none; }
+
+article nav{border-top: var(--axel-article-nav-border-top); margin-top: 8em;}
+article nav .Paher__prev{position: fixed; left: }
+
+/* ---------- classes ---------- */
+
+.required{color:#a42;}
+.optional{color:#888;}
+
+
+/* ---------- classes ---------- */
+
+
+/* ---------- TOC ---------- */
 @media(min-width:1700px){
     .TableOfContentsContainer{
         position: fixed;
@@ -175,19 +180,19 @@ article nav{border-top: var(--axel-article-nav-border-top); margin-top: 8em;}
 }
 
 .TableOfContentsContainer{
-    border-top-left-radius: 1em;
     background-color: var(--axel_bg-toc);
     padding: 0.5em;
 }
 
 .s-content .TableOfContentsContainer h4{
     background-color: var(--axel_bg-toc-head);
+    border-top-left-radius: 1em;
 	font-size: 1.2em;
     margin: 0;
 }
 
 .TableOfContentsContainer__content {
-	border: none;
+	border-width: 1px;
 	font-size: 0.5em;
 
 }
