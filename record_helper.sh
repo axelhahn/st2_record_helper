@@ -117,7 +117,7 @@ function _detectHttpOK(){
 function _detectHttpFail(){
     local _header="$1"
 
-    echo "$_header" | grep -iE "^http/.*(404|500|503|504)" >/dev/null || return 0
+    echo "$_header" | grep -iE "^http/.*(404|410|500|503|504)" >/dev/null || return 0
     _err=$( _getHttpDetails "$_header" )
     _exit_with_error "ERROR: unable to reach target server.\n\r$_err"
 }
