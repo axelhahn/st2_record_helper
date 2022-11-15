@@ -1,6 +1,6 @@
 # Record helper script for Streamtuner 2
 
-This script contains some logic to download different streaming types in Streamtuner 2 with streamripper.
+This bash script contains some logic to download different streaming types in Streamtuner 2 with Streamripper.
 
 👤 Author: Axel Hahn \
 📄 Source: <https://github.com/axelhahn/st2_record_helper> \
