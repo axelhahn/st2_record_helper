@@ -1,5 +1,7 @@
 # Record helper script for Streamtuner 2
 
+## Description
+
 This script contains some logic to download different streaming types in Streamtuner 2 with streamripper.
 
 👤 Author: Axel Hahn \
