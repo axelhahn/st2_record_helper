@@ -1,14 +1,14 @@
 /*
 
     patch css elements of daux.io blue theme
-    version 2022-11-14
+    version 2022-12-04
 
 */
 
 :root {
 
     /* Axels Overrides */
-    --link-color: #379;
+    --link-color: #37a;
     --brand-color: var(--color-secondary);
     --brand-background: var(--body-background);
     --hr-color: none;
@@ -31,9 +31,6 @@
 
     --axel_h1_header: none;
 
-    --axel_h1: #288;
-    --axel_h1-bg: #fafafa;
-    --axel_h1-bottom: 3px solid #8dd;
     --axel_h1: #aaa;
     --axel_h1-bg: none;
     --axel_h1-bottom: 3px solid none;
@@ -41,21 +38,29 @@
     --axel_h2-bg: #fafafa;
     --axel_h2-bottom: 2px solid #8ce;
     --axel_h3: #838;
+    --axel_h3-bg: none;
     --axel_h3-bottom: 1px solid #ddd;
+    --axel_h4: #c74;
+    --axel_h4-bg: none;
+    --axel_h4-bottom: 1px dashed #ddd;
+
+    --axel_hero_bg: #f8f8f8;
+
+    --axel_img-border: 2px dashed #cbc;
 
     --axel_nav-bg:#fcfcfc;
     --axel_nav-buttomborder: #ddd;
 
     --axel_pre-background: #f8f8f8;
     --axel-th-background: #d0e0e8;
-    --axel-article-nav-border-top: 2px dotted #ddd;
+    --axel-article-nav-border-top: 0px dotted #ddd;
 }
 
 .dark {
 
     /* Axels Overrides */
     --color-text: #c0c0c0;
-    --link-color: #6cd;
+    --link-color: #6bd;
 
     --brand-color: var(--color-text);
     --brand-background: var(--body-background);
@@ -80,27 +85,28 @@
     --axel_h1_header: none;
 
     --axel_h1: #777;
-    --axel_h1-bottom: 3px solid #444;
-    --axel_h2: #666;
-    --axel_h2-bottom: 2px solid #333;
-    --axel_h3: #555;
-    --axel_h3-bottom: 1px solid #333;
-
-    --axel_h1: #288;
-    --axel_h1-bg: #282828;
-    --axel_h1-bottom: 3px solid #266;
+    --axel_h1-bg: none;
+    --axel_h1-bottom: none;
     --axel_h2: #27a;
     --axel_h2-bg: #282828;
     --axel_h2-bottom: 2px solid #256;
     --axel_h3: #838;
+    --axel_h3-bg: none;
     --axel_h3-bottom: 1px solid #333;
+    --axel_h4: #c74;
+    --axel_h4-bg: none;
+    --axel_h4-bottom: 1px dashed #333;
+
+    --axel_hero_bg: #242424;
+
+    --axel_img-border: 2px dashed #656;
 
     --axel_nav-bg:#242424;
     --axel_nav-buttomborder: #555;
     --axel_pre-background: #bcc;
 
     --axel-th-background: #203038;
-    --axel-article-nav-border-top: 2px dotted #234;
+    --axel-article-nav-border-top: 0px dotted #234;
 }
 
 /* ---------- left side ---------- */
@@ -125,10 +131,6 @@ a.Brand {
     height: 4em;
 }
 
-ul.Nav{
-    border-bottom: 1px dashed var(--axel_nav-buttomborder);
-    background: var(--axel_nav-bg);
-}
 
 /* ---------- page header: breadcrumb ---------- */
 
@@ -139,11 +141,13 @@ ul.Nav{
 /* ---------- page content ---------- */
 
 .s-content{padding-top: 1em;}
-.s-content h1{background: var(--axel_h1-bg); color: var(--axel_h1); font-size: 200%; font-weight:bold; margin-top: 0em; border-bottom: var(--axel_h1-bottom);}
+.s-content h1{background: var(--axel_h1-bg); color: var(--axel_h1); font-size: 200%; font-weight:bold; margin-bottom: 2em; margin-top: 0em; border-bottom: var(--axel_h1-bottom);}
 .s-content h2{background: var(--axel_h2-bg); color: var(--axel_h2); font-size: 180%; font-weight:bold; margin-top: 4em; border-bottom: var(--axel_h2-bottom);}
 h2:first-of-type {margin-top: 0em;}
-.s-content h3{background: var(--axel_h3-bg); color: var(--axel_h3); font-size: 150%; font-weight:bold; margin-top: 3em; border-bottom: var(--axel_h3-bottom);}
-.s-content h4{margin: 0; font-size: 100%; text-align: center; background-color: rgba(0,0,0,0.05);padding: 0.3em;}
+.s-content>h3{background: var(--axel_h3-bg); color: var(--axel_h3); font-size: 150%; font-weight:bold; margin-top: 3em; border-bottom: var(--axel_h3-bottom);}
+.s-content>h4{background: var(--axel_h4-bg); color: var(--axel_h4); font-size: 130%; font-weight:bold; margin-top: 3em; border-bottom: var(--axel_h4-bottom);}
+
+.s-content img{border: var(--axel_img-border); border-radius: 1.5em; padding: 1em; margin: 1em 0;}
 .s-content pre{
     background: var(--axel_pre-background);
 }
@@ -158,14 +162,17 @@ h2:first-of-type {margin-top: 0em;}
 
 .s-content h3 code{border: none; background: none; }
 
-article nav{border-top: var(--axel-article-nav-border-top); margin-top: 8em;}
-article nav .Paher__prev{position: fixed; left: }
+article nav{border-top: var(--axel-article-nav-border-top); margin: 8em 0 5em;}
+.Pager li > a{padding: 1em 2em;}
 
 /* ---------- classes ---------- */
 
 .required{color:#a42;}
 .optional{color:#888;}
 
+div.hero{background: var(--axel_hero_bg);border-radius: 2em; padding: 5em 2em;text-align: center;} 
+div.hero h2{color: var(--color-text); background: none; _border: none; text-align: center; font-size: 300%; margin: 0 0 2em;}
+div.hero p.center{text-align: center;}
 
 /* ---------- classes ---------- */
 
@@ -187,8 +194,9 @@ article nav .Paher__prev{position: fixed; left: }
 .s-content .TableOfContentsContainer h4{
     background-color: var(--axel_bg-toc-head);
     border-top-left-radius: 1em;
-	font-size: 1.2em;
+	font-size: 1.1em;
     margin: 0;
+    padding: 0;
 }
 
 .TableOfContentsContainer__content {
@@ -199,4 +207,20 @@ article nav .Paher__prev{position: fixed; left: }
 ul.TableOfContents ul{
 	list-style-type: none;
     padding-left: 1em;
+}
+
+.EditOn a::before{
+    content: '✏️ ';
+}
+
+.Links a[href^="https://github.com/"]::before {
+    content: '🌐 ';
+}
+
+.Links a[href^="https://git-repo.iml.unibe.ch/"]::before {
+    content: '🌐 ';
+}
+
+.Links a[href^="https://www.axel-hahn.de/docs"]::before {
+    content: '📗 ';
 }

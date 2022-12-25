@@ -22,6 +22,6 @@ If your user has write permissions in the config directory it will be done autom
 
 In Streamtuner2 press F12 for settings. In the record section for `audio/*` set
 
-`konsole -e /home/axel/scripts/st2_record_helper/record_helper.sh`
-or
+`konsole -e /home/axel/scripts/st2_record_helper/record_helper.sh` \
+or \
 `gnome-terminal -- /home/axel/scripts/st2_record_helper/record_helper.sh`
