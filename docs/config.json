@@ -17,8 +17,8 @@
             "basepath": "https://git-repo.iml.unibe.ch/iml-open-source/__PROJECT__/tree/master/docs"
         },
         "links": {
-            "🧾 Git Repo": "https://github.com/axelhahn/st2_record_helper",
-            "📗 Axels Docs": "https://www.axel-hahn.de/docs/"
+            "Git Repo": "https://github.com/axelhahn/st2_record_helper",
+            "Axels Docs": "https://www.axel-hahn.de/docs/"
         },
         "theme": "daux-blue",
         "search": true
