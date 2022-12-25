@@ -5,30 +5,24 @@
 # for streamtuner2
 #
 # ----------------------------------------------------------------------------
-#
-# WORK IN PROGRESS ... TODOs
-#   - command line parameters
-#   - .. and a help
-#   - customize colors in config file
-#   - integrate cleanup of streamripper_cleanup.sh
-#
-# ----------------------------------------------------------------------------
 # 👤 Author: Axel Hahn
 # 📄 Source: <https://github.com/axelhahn/st2_record_helper>
 # 📜 License: GNU GPL 3.0
+# 📗 Docs: <https://www.axel-hahn.de/docs/st2_record_helper/>
 # ----------------------------------------------------------------------------
 # 2022-11-03  v0.1  www.axel-hahn.de  init
 # 2022-11-07  v0.2  www.axel-hahn.de  enable external config; add pls + mpegxurl as stream
 # 2022-11-08  v0.3  www.axel-hahn.de  add support for MyOggRadio plugin: read from a local pls file
 # 2022-11-09  v0.4  www.axel-hahn.de  complete check of radio plugins; more error details
 # 2022-11-14  v1.0  www.axel-hahn.de  detect empty streaming url in playlist; customize colors; cli params, ...
+# 2022-12-26  v1.1  www.axel-hahn.de  check required tools; cleanup: keep largest file only
 # ============================================================================
 
 # ----------------------------------------------------------------------------
 # CONFIG
 # ----------------------------------------------------------------------------
 
-_version="1.0"
+_version="1.1"
 _url="$1"
 
 # download dirs:
@@ -123,7 +117,7 @@ function _detectHttpOK(){
 function _detectHttpFail(){
     local _header="$1"
 
-    echo "$_header" | grep -iE "^http/.*(404|500|503|504)" >/dev/null || return 0
+    echo "$_header" | grep -iE "^http/.*(404|410|500|503|504)" >/dev/null || return 0
     _err=$( _getHttpDetails "$_header" )
     _exit_with_error "ERROR: unable to reach target server.\n\r$_err"
 }
@@ -156,13 +150,13 @@ function _detectStreamUrl(){
     fi
 
     if echo "$_newUrl" | grep -v "://" | grep "\.pls" >/dev/null; then
-        _wd "scan pls file [$_newUrl] ..."
+        _wd "scan local pls file [$_newUrl] ..."
         _newUrl=$( cat "$_newUrl" | grep "^File.*=.*http" | head -1 | cut -f 2- -d "=" )
     fi
 
     test "$_url" != "$_newUrl" && (
         if [ -z "$_newUrl" ]; then
-            _exit_with_error "ERROR: detected an empty streaming url. Maybe the playlist is corrupt."
+            echo "ERROR: detected an empty streaming url. Maybe the playlist is corrupt."
         fi
         echo "Set streaming url to [$_newUrl]"
         _showHttpResponseHeader "$_newUrl"
@@ -175,7 +169,23 @@ function _detectStreamUrl(){
     echo
 }
 
-# when detecting a file ... check if it is a playlist file
+# when detecting a local file ... check if it is 
+# - a playlist file of jamendo mp3 files
+# return value is unix like: 0 = yes/ OK; 1 = false
+function _detectFilePlaylist(){
+    cat "$_url" | grep "jamendo\.com.*trackid=.*format=mp3" >/dev/null && return 0
+    return 1
+}
+# when detecting an url ... check if it is 
+# - a playlist file of jamendo mp3 files
+# return value is unix like: 0 = yes/ OK; 1 = false
+function _detectHttpPlaylist(){
+    echo "$_url" | grep "jamendo\.com.*/tracks.*format=mp3" >/dev/null && return 0
+    return 1
+}
+
+# when detecting a local file ... check if it is a playlist file of streams
+# return value is unix like: 0 = yes/ OK; 1 = false
 # param  string  http response header
 function _detectPlaylist(){
     local _header="$1"
@@ -223,6 +233,7 @@ function _getMetaItem(){
 # param  string  filename of a local mp3 file
 function _getmp3filename(){
     local _meta
+    _require ffprobe 1
     _meta=$( ffprobe "$1" 2>&1 | grep -E "(title|artist|date)" )
     if test -n "$_meta"; then
         _title=$(  _getMetaItem "$_meta" "title" "unknown_title" )
@@ -253,6 +264,25 @@ function _getHttpDetails(){
     test -n "$_sInfo" && echo ": $_sInfo" || echo
 }
 
+# check if a binary exists in $PATH
+# param  string  name of binary
+function _require(){
+    local _bin="$1"
+    local _warningonly="$2"
+    if ! which "$_bin" >/dev/null; then
+        if [ -n "$_warningonly" ]; then
+            echo >&2
+            echo -e "\e[0mWARNING: missing an optional binary: $_bin">&2
+            echo -n "Wait 5 sec ... or RETURN to continue" >&2
+            read -r -t 5 >&2 
+            echo >&2
+            echo >&2
+        else
+            _exit_with_error "Missing required binary: $1"
+        fi
+    fi
+}
+
 # get a more detailed message to a given error code
 # this function searches for the error code in error_details.txt
 #param  string  an error code
@@ -272,7 +302,9 @@ function _doCleanup(){
     cd "$_dirstreamripper" || exit 1
 
     _h2 "CLEANUP STREAMING DIRS [$(pwd)]"
-    echo "I remove subdirs without a file and clean up 'incomplete' subdirs"
+    echo "I remove subdirs without a file and clean up"
+    echo "- multiple files of the same song"
+    echo "- 'incomplete' subdirs"
     echo
 
     find . -maxdepth 1 -type d | grep -v "^.$" | sort | while read -r stationdir
@@ -285,6 +317,26 @@ function _doCleanup(){
             rm -rf "${stationdir}" && echo "OK" || echo "FAILED"
         ) || (
             echo "KEEP"
+
+            # detect multiple files of the same song and keep the largest
+            find "$stationdir" -maxdepth 1 -type f | grep "/.*([1-9][0-9]*)\.mp3$" | rev | cut -f 2- -d '(' | rev | sort -u | while read -r multifile
+            do
+                spacer="                          "
+                echo
+                echo "${spacer}Multiple files for [${multifile}]"
+                largest=$(ls -1S "${multifile}"* | head -1)
+
+                ls -l "$largest" | sed "s,^,${spacer}KEEP largest ,g"
+                ls -1 "${multifile}"* | grep -v "$largest" | while read -r deletefile; do
+                    echo "$deletefile" | sed "s,^,${spacer}      DELETE ,g"
+                    rm -f "$deletefile"
+                done
+                if echo "$largest" | grep "/.*([1-9][0-9]*)\.mp3$" >/dev/null; then
+                    echo "${spacer}      RENAME largest to ${multifile}.mp3"
+                    mv "$largest" "${multifile}.mp3"
+                fi
+            done
+            
             iFiles2=$(find "$stationdir/incomplete" -maxdepth 1 -type f | wc -l )
             printf "      +--- [incomplete]: %4s files ... " $iFiles2
             test $iFiles2 -gt 0 && (
@@ -320,11 +372,8 @@ Next to Radiostreams the donwload of single audio files is supported:
 - Jamendo tracks: mp3 files
 - MODarchive: all tracker files
 
-See README.md with the list of supported streams and plugins.
-
-
 Author: Axel Hahn | License: GNU GPL 3.0
-
+Docs  : https://www.axel-hahn.de/docs/st2_record_helper/
 
 SYNTAX:
 $_self [OPTIONS] [URL]
@@ -352,13 +401,16 @@ echo "________________________________________________________________________/ 
 echo -e "\e[0m"
 
 # ---------- LOAD CONFIG
-# this section works but is not used yet ... so I comment it
 defaultcfg=$( dirname $0 )/config/default
 test -f "$defaultcfg" || cp "${defaultcfg}.dist" "$defaultcfg"
 if ! . $( dirname $0 )/config/default; then
     _exit_with_error "Failed to load config"
 fi
 _wd "Config was loaded: $( dirname $0 )/config/default"
+
+# ---------- CHECK REQUIREMENTS
+_require curl
+_require streamripper
 
 # ---------- CHECK PARAMS
 while getopts ":c :h :t: :u: :w:" OPT; do
@@ -401,19 +453,25 @@ echo
 if ! echo "$_url" | grep "://" >/dev/null
 then
     _h2 "Local file detected"
-    _sType="stream"
-    _wd "It will be handled as a stream. I hope it is a playlist."
+    if _detectFilePlaylist; then
+        _sType="download-local-playlist"
+    else
+        _sType="stream"
+        _wd "It will be handled as a stream. I hope it is a playlist of streams."
+    fi
 else
     # ---------- DETECT
     _h2 "Url detected - detect if it is a file or a stream ..."
     _header=$( curl -I -L --connect-timeout $_iTimeout --user-agent "$_userAgent" "$_url" 2>/dev/null )
     _showHttpResponseHeader "$_url" "$_header"
 
-    test -z "$_header"         && _exit_with_error "ERROR: No response from target server.\n\rThe ip address or hostname does not exist anymore or the streaming service is offline."
+    test -z "$_header" && _exit_with_error "ERROR: No response from target server.\n\rThe ip address or hostname does not exist anymore or the streaming service is offline."
 
     _detectHttpFail "$_header"
 
-    if _detectHttpIsStream "$_header"; then
+    if _detectHttpPlaylist; then
+        _sType="download-playlist"
+    elif _detectHttpIsStream "$_header"; then
         _sType="stream"
     else
         if _detectHttpOK "$_header"; then
@@ -439,8 +497,8 @@ case "$_sType" in
         test -z "$_outfile" && _outfile=$_tmpdlfile
 
         _h2 "Starting file download [$_dirfiles/$_outfile]..."
+        echo -e "\e[${_col_work}m"
         curl -i --connect-timeout $_iTimeout --user-agent "$_userAgent" --output "$_dirfiles/$_outfile" "$_url"
-        echo
 
         if [ "$_outfile" = "$_tmpdlfile" ]; then
             # ffprobe "$1" 
@@ -450,10 +508,12 @@ case "$_sType" in
                 read -r _outfile
             fi
             if [ -n "$_outfile" ]; then
+                echo -e "\e[${_col_work}m"
                 echo "renaming temporary download file $_tmpdlfile ..."
                 mv "$_dirfiles/$_tmpdlfile" "$_dirfiles/$_outfile"
             fi
         fi
+        echo
 
         _h2 "Output:"
         if [ -n "$_outfile" ]; then
@@ -462,6 +522,19 @@ case "$_sType" in
             echo "removing temporary download file $_dirfiles/$_tmpdlfile ..."
             rm -f "$_dirfiles/$_tmpdlfile"
         fi
+        ;;
+    "download-local-playlist")
+        _h2 "Multiple file download from local playlist."
+        # _sPL="$( cat $_url 2>/dev/null )"
+        # _wd "Playlist data: $_sPL"
+        _exit_with_error "Download of files in a playlist is not implemented yet."
+        ;;
+    "download-playlist")
+        _h2 "Multiple file download from playlist."
+        # _sPL=$( curl -L --connect-timeout $_iTimeout --user-agent "$_userAgent" "$_url" 2>/dev/null )
+        # _wd "Playlist data: $_sPL"
+        # echo "$_sPL" | jq ".results"
+        _exit_with_error "Download of files in a playlist is not implemented yet."
         ;;
     "stream")
         _h2 "detect url to a real stream"

@@ -1,7 +1,7 @@
 /*
 
     patch css elements of daux.io blue theme
-    version 2022-11-15
+    version 2022-12-04
 
 */
 
@@ -38,7 +38,15 @@
     --axel_h2-bg: #fafafa;
     --axel_h2-bottom: 2px solid #8ce;
     --axel_h3: #838;
+    --axel_h3-bg: none;
     --axel_h3-bottom: 1px solid #ddd;
+    --axel_h4: #c74;
+    --axel_h4-bg: none;
+    --axel_h4-bottom: 1px dashed #ddd;
+
+    --axel_hero_bg: #f8f8f8;
+
+    --axel_img-border: 2px dashed #cbc;
 
     --axel_nav-bg:#fcfcfc;
     --axel_nav-buttomborder: #ddd;
@@ -83,7 +91,15 @@
     --axel_h2-bg: #282828;
     --axel_h2-bottom: 2px solid #256;
     --axel_h3: #838;
+    --axel_h3-bg: none;
     --axel_h3-bottom: 1px solid #333;
+    --axel_h4: #c74;
+    --axel_h4-bg: none;
+    --axel_h4-bottom: 1px dashed #333;
+
+    --axel_hero_bg: #242424;
+
+    --axel_img-border: 2px dashed #656;
 
     --axel_nav-bg:#242424;
     --axel_nav-buttomborder: #555;
@@ -128,8 +144,10 @@ a.Brand {
 .s-content h1{background: var(--axel_h1-bg); color: var(--axel_h1); font-size: 200%; font-weight:bold; margin-bottom: 2em; margin-top: 0em; border-bottom: var(--axel_h1-bottom);}
 .s-content h2{background: var(--axel_h2-bg); color: var(--axel_h2); font-size: 180%; font-weight:bold; margin-top: 4em; border-bottom: var(--axel_h2-bottom);}
 h2:first-of-type {margin-top: 0em;}
-.s-content h3{background: var(--axel_h3-bg); color: var(--axel_h3); font-size: 150%; font-weight:bold; margin-top: 3em; border-bottom: var(--axel_h3-bottom);}
-.s-content h4{margin: 0; font-size: 100%; text-align: center; background-color: rgba(0,0,0,0.05);padding: 0.3em;}
+.s-content>h3{background: var(--axel_h3-bg); color: var(--axel_h3); font-size: 150%; font-weight:bold; margin-top: 3em; border-bottom: var(--axel_h3-bottom);}
+.s-content>h4{background: var(--axel_h4-bg); color: var(--axel_h4); font-size: 130%; font-weight:bold; margin-top: 3em; border-bottom: var(--axel_h4-bottom);}
+
+.s-content img{border: var(--axel_img-border); border-radius: 1.5em; padding: 1em; margin: 1em 0;}
 .s-content pre{
     background: var(--axel_pre-background);
 }
@@ -152,6 +170,9 @@ article nav{border-top: var(--axel-article-nav-border-top); margin: 8em 0 5em;}
 .required{color:#a42;}
 .optional{color:#888;}
 
+div.hero{background: var(--axel_hero_bg);border-radius: 2em; padding: 5em 2em;text-align: center;} 
+div.hero h2{color: var(--color-text); background: none; _border: none; text-align: center; font-size: 300%; margin: 0 0 2em;}
+div.hero p.center{text-align: center;}
 
 /* ---------- classes ---------- */
 
@@ -186,4 +207,20 @@ article nav{border-top: var(--axel-article-nav-border-top); margin: 8em 0 5em;}
 ul.TableOfContents ul{
 	list-style-type: none;
     padding-left: 1em;
+}
+
+.EditOn a::before{
+    content: '✏️ ';
+}
+
+.Links a[href^="https://github.com/"]::before {
+    content: '🌐 ';
+}
+
+.Links a[href^="https://git-repo.iml.unibe.ch/"]::before {
+    content: '🌐 ';
+}
+
+.Links a[href^="https://www.axel-hahn.de/docs"]::before {
+    content: '📗 ';
 }

@@ -10,7 +10,7 @@ _______________________________________________________________________________
 
  Axel Hahn's           ⡀⣀ ⢀⡀ ⢀⣀ ⢀⡀ ⡀⣀ ⢀⣸   ⣇⡀ ⢀⡀ ⡇ ⣀⡀ ⢀⡀ ⡀⣀ 
   Streamtuner 2        ⠏  ⠣⠭ ⠣⠤ ⠣⠜ ⠏  ⠣⠼   ⠇⠸ ⠣⠭ ⠣ ⡧⠜ ⠣⠭ ⠏           ______
-________________________________________________________________________/ v1.0
+________________________________________________________________________/ v1.1
 
 DEBUG Config was loaded: /home/axel/skripte/streamtuner/config/default
 
@@ -32,11 +32,8 @@ Next to Radiostreams the donwload of single audio files is supported:
 - Jamendo tracks: mp3 files
 - MODarchive: all tracker files
 
-See README.md with the list of supported streams and plugins.
-
-
 Author: Axel Hahn | License: GNU GPL 3.0
-
+Docs  : https://www.axel-hahn.de/docs/st2_record_helper/
 
 SYNTAX:
 record_helper.sh [OPTIONS] [URL]
@@ -47,7 +44,7 @@ OPTIONS:
     -h                show this help and exit
     -t <seconds>      override connect timeout of curl; value in config: 3
     -u <user_agent>   set another user agent; it overides value in config
-                      'Axels streamtuner2 record_helper v1.0'
+                      'Axels streamtuner2 record_helper v1.1'
     -w <seconds>      override time to wait; value in config: 60
 
 ```
