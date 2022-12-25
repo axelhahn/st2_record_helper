@@ -15,7 +15,7 @@
 # 2022-11-08  v0.3  www.axel-hahn.de  add support for MyOggRadio plugin: read from a local pls file
 # 2022-11-09  v0.4  www.axel-hahn.de  complete check of radio plugins; more error details
 # 2022-11-14  v1.0  www.axel-hahn.de  detect empty streaming url in playlist; customize colors; cli params, ...
-# 2022-11-xx  v1.1  www.axel-hahn.de  check required tools | WIP ...
+# 2022-12-26  v1.1  www.axel-hahn.de  check required tools; cleanup: keep largest file only
 # ============================================================================
 
 # ----------------------------------------------------------------------------
@@ -302,7 +302,9 @@ function _doCleanup(){
     cd "$_dirstreamripper" || exit 1
 
     _h2 "CLEANUP STREAMING DIRS [$(pwd)]"
-    echo "I remove subdirs without a file and clean up 'incomplete' subdirs"
+    echo "I remove subdirs without a file and clean up"
+    echo "- multiple files of the same song"
+    echo "- 'incomplete' subdirs"
     echo
 
     find . -maxdepth 1 -type d | grep -v "^.$" | sort | while read -r stationdir
@@ -315,6 +317,26 @@ function _doCleanup(){
             rm -rf "${stationdir}" && echo "OK" || echo "FAILED"
         ) || (
             echo "KEEP"
+
+            # detect multiple files of the same song and keep the largest
+            find "$stationdir" -maxdepth 1 -type f | grep "/.*([1-9][0-9]*)\.mp3$" | rev | cut -f 2- -d '(' | rev | sort -u | while read -r multifile
+            do
+                spacer="                          "
+                echo
+                echo "${spacer}Multiple files for [${multifile}]"
+                largest=$(ls -1S "${multifile}"* | head -1)
+
+                ls -l "$largest" | sed "s,^,${spacer}KEEP largest ,g"
+                ls -1 "${multifile}"* | grep -v "$largest" | while read -r deletefile; do
+                    echo "$deletefile" | sed "s,^,${spacer}      DELETE ,g"
+                    rm -f "$deletefile"
+                done
+                if echo "$largest" | grep "/.*([1-9][0-9]*)\.mp3$" >/dev/null; then
+                    echo "${spacer}      RENAME largest to ${multifile}.mp3"
+                    mv "$largest" "${multifile}.mp3"
+                fi
+            done
+            
             iFiles2=$(find "$stationdir/incomplete" -maxdepth 1 -type f | wc -l )
             printf "      +--- [incomplete]: %4s files ... " $iFiles2
             test $iFiles2 -gt 0 && (
@@ -350,11 +372,8 @@ Next to Radiostreams the donwload of single audio files is supported:
 - Jamendo tracks: mp3 files
 - MODarchive: all tracker files
 
-See README.md with the list of supported streams and plugins.
-
-
 Author: Axel Hahn | License: GNU GPL 3.0
-
+Docs  : https://www.axel-hahn.de/docs/st2_record_helper/
 
 SYNTAX:
 $_self [OPTIONS] [URL]
